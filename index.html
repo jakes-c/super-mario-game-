@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Super Mario Bros JS</title>
+  
+  <link href="assets/css/reset.css" rel="stylesheet" />
+  <link href="assets/css/stylesheet.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css?family=Patrick+Hand+SC" rel="stylesheet">
+  <link rel="shortcut icon" type="image/png" href="assets/images/favicon.png"/>
+  
+  <style>
+    /* Menu Styles */
+    .menu-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #4CAF50, #2E7D32);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      font-family: 'Patrick Hand SC', cursive;
+      overflow: hidden;
+    }
+    
+    .menu-screen.hidden {
+      display: none;
+    }
+    
+    .mario-title {
+ font-size: 5rem;
+ color: #FFD700;
+ text-shadow: 4px 4px 0px #FF4444, 8px 8px 15px rgba(0,0,0,0.6);
+ margin-bottom: 40px;
+ text-align: center;
+ background: linear-gradient(45deg, #FFD700, #FFA000, #FFD700);
+ background-size: 200% 200%;
+ -webkit-background-clip: text;
+ -webkit-text-fill-color: transparent;
+ background-clip: text;
+ animation: titlePulse 3s ease-in-out infinite, gradientShift 4s ease-in-out infinite;
+}
+    
+    @keyframes titlePulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+    
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+    
+    .menu-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 25px;
+      align-items: center;
+    }
+    
+    .menu-btn {
+      background: linear-gradient(145deg, #FF6B35, #FF4444);
+      border: 4px solid #FFFFFF;
+      color: #FFFFFF;
+      font-family: 'Patrick Hand SC', cursive;
+      font-size: 1.6rem;
+      padding: 18px 45px;
+      border-radius: 30px;
+      cursor: pointer;
+      text-shadow: 2px 2px 0px #000000;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      min-width: 250px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .menu-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      transition: left 0.6s;
+    }
+    
+    .menu-btn:hover::before {
+      left: 100%;
+    }
+    
+    .menu-btn:hover {
+      background: linear-gradient(145deg, #FF8A65, #FF6B35);
+      transform: translateY(-5px) scale(1.05);
+      box-shadow: 0 15px 30px rgba(0,0,0,0.5);
+    }
+    
+    .menu-btn:active {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+    }
+    
+    /* Enhanced Level Select Styles */
+    .level-select {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #1976D2, #0D47A1, #1A237E);
+      background-size: 400% 400%;
+      animation: backgroundFlow 8s ease-in-out infinite;
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      font-family: 'Patrick Hand SC', cursive;
+      overflow: hidden;
+    }
+    
+    @keyframes backgroundFlow {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+    
+    .level-select.show {
+      display: flex;
+      animation: slideIn 0.6s ease-out;
+    }
+    
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-50px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .level-title {
+      font-size: 3.5rem;
+      color: #FFFFFF;
+      text-shadow: 4px 4px 0px #000000, 8px 8px 20px rgba(0,0,0,0.7);
+      margin-bottom: 50px;
+      animation: glow 2s ease-in-out infinite alternate;
+      position: relative;
+    }
+    
+    @keyframes glow {
+      from { text-shadow: 4px 4px 0px #000000, 8px 8px 20px rgba(0,0,0,0.7), 0 0 20px #64B5F6; }
+      to { text-shadow: 4px 4px 0px #000000, 8px 8px 20px rgba(0,0,0,0.7), 0 0 40px #64B5F6, 0 0 60px #42A5F5; }
+    }
+    
+    .level-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 30px;
+      margin-bottom: 50px;
+      perspective: 1000px;
+    }
+    
+    .level-btn {
+      background: linear-gradient(145deg, #4CAF50, #2E7D32);
+      border: 4px solid #FFFFFF;
+      color: #FFFFFF;
+      font-family: 'Patrick Hand SC', cursive;
+      font-size: 1.4rem;
+      padding: 25px;
+      border-radius: 20px;
+      cursor: pointer;
+      text-shadow: 2px 2px 0px #000000;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+      transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      width: 150px;
+      height: 120px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+      transform-style: preserve-3d;
+    }
+    
+    .level-btn::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: conic-gradient(from 0deg, transparent, rgba(255,255,255,0.3), transparent);
+      opacity: 0;
+      transition: opacity 0.5s;
+      animation: rotate 3s linear infinite;
+    }
+    
+    @keyframes rotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    
+    .level-btn:hover::before {
+      opacity: 1;
+    }
+    
+    .level-btn:hover {
+      background: linear-gradient(145deg, #66BB6A, #4CAF50);
+      transform: translateY(-8px) rotateX(10deg) rotateY(5deg) scale(1.1);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+      border-color: #FFD700;
+    }
+    
+    .level-btn .level-number {
+      font-size: 1.6rem;
+      font-weight: bold;
+      margin-bottom: 8px;
+      transition: all 0.3s ease;
+    }
+    
+    .level-btn .level-theme {
+      font-size: 1rem;
+      opacity: 0.9;
+      transition: all 0.3s ease;
+    }
+    
+    .level-btn:hover .level-number {
+      transform: scale(1.2);
+      color: #FFD700;
+    }
+    
+    .level-btn:hover .level-theme {
+      opacity: 1;
+      transform: translateY(-2px);
+    }
+    
+    .level-btn.locked {
+      background: linear-gradient(145deg, #757575, #424242);
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+    
+    .level-btn.locked:hover {
+      transform: none;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+      border-color: #FFFFFF;
+    }
+    
+    .level-btn.locked::before {
+      display: none;
+    }
+    
+    .back-btn {
+      background: linear-gradient(145deg, #FF9800, #F57C00);
+      border: 3px solid #FFFFFF;
+      color: #FFFFFF;
+      font-family: 'Patrick Hand SC', cursive;
+      font-size: 1.3rem;
+      padding: 12px 35px;
+      border-radius: 25px;
+      cursor: pointer;
+      text-shadow: 2px 2px 0px #000000;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .back-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      transition: left 0.5s;
+    }
+    
+    .back-btn:hover::before {
+      left: 100%;
+    }
+    
+    .back-btn:hover {
+      background: linear-gradient(145deg, #FFB74D, #FF9800);
+      transform: translateY(-4px) scale(1.05);
+      box-shadow: 0 12px 25px rgba(0,0,0,0.5);
+    }
+    
+    /* Game area initially hidden */
+    .game-area {
+      display: none;
+    }
+    
+    .game-area.show {
+      display: block;
+    }
+    
+    /* Enhanced floating coins */
+    .coins {
+      position: absolute;
+      font-size: 2.5rem;
+      animation: float 4s ease-in-out infinite;
+      filter: drop-shadow(0 0 10px #FFD700);
+    }
+    
+    @keyframes float {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      25% { transform: translateY(-15px) rotate(90deg); }
+      50% { transform: translateY(-30px) rotate(180deg); }
+      75% { transform: translateY(-15px) rotate(270deg); }
+    }
+    
+    .coin1 { top: 15%; left: 8%; animation-delay: 0s; }
+    .coin2 { top: 25%; right: 12%; animation-delay: 1s; }
+    .coin3 { bottom: 20%; left: 15%; animation-delay: 2s; }
+    .coin4 { bottom: 30%; right: 8%; animation-delay: 0.5s; }
+    .coin5 { top: 60%; left: 5%; animation-delay: 1.5s; }
+    .coin6 { top: 40%; right: 5%; animation-delay: 2.5s; }
+    
+    /* Stars background for level select */
+    .stars {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    
+    .star {
+      position: absolute;
+      background: white;
+      border-radius: 50%;
+      animation: twinkle 2s ease-in-out infinite;
+    }
+    
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.3; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.2); }
+    }
+    
+    /* Controls info styling */
+    #controlsInfo {
+      background: rgba(0,0,0,0.8);
+      border-radius: 20px;
+      padding: 30px;
+      border: 3px solid #FFD700;
+      backdrop-filter: blur(10px);
+    }
+    
+    #controlsInfo p {
+      margin: 10px 0;
+      font-size: 1.3rem;
+    }
+
+    /* Game Over Screen Styles */
+    .game-over-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #8B0000, #DC143C, #8B0000);
+      background-size: 400% 400%;
+      animation: backgroundFlow 4s ease-in-out infinite;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      font-family: 'Patrick Hand SC', cursive;
+    }
+
+    .game-over-screen.show {
+      display: flex;
+      animation: fadeIn 0.8s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .game-over-content {
+      text-align: center;
+      background: rgba(0,0,0,0.8);
+      border-radius: 30px;
+      padding: 50px;
+      border: 5px solid #FFD700;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.7);
+      backdrop-filter: blur(10px);
+    }
+
+    .game-over-title {
+      font-size: 4rem;
+      color: #FF4444;
+      text-shadow: 4px 4px 0px #000000, 8px 8px 20px rgba(255,0,0,0.8);
+      margin-bottom: 30px;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+
+    .game-over-stats {
+      margin-bottom: 40px;
+      color: #FFFFFF;
+      font-size: 1.5rem;
+    }
+
+    .game-over-stats p {
+      margin: 15px 0;
+      text-shadow: 2px 2px 0px #000000;
+    }
+
+    .game-over-buttons {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+    }
+
+    /* Level Complete Screen Styles */
+    .level-complete-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #228B22, #32CD32, #228B22);
+      background-size: 400% 400%;
+      animation: backgroundFlow 4s ease-in-out infinite;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      font-family: 'Patrick Hand SC', cursive;
+    }
+
+    .level-complete-screen.show {
+      display: flex;
+      animation: slideInUp 0.8s ease-out;
+    }
+
+    @keyframes slideInUp {
+      from { 
+        opacity: 0; 
+        transform: translateY(100px);
+      }
+      to { 
+        opacity: 1; 
+        transform: translateY(0);
+      }
+    }
+
+    .level-complete-content {
+      text-align: center;
+      background: rgba(0,0,0,0.8);
+      border-radius: 30px;
+      padding: 50px;
+      border: 5px solid #FFD700;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.7);
+      backdrop-filter: blur(10px);
+    }
+
+    .level-complete-title {
+      font-size: 3.5rem;
+      color: #32CD32;
+      text-shadow: 4px 4px 0px #000000, 8px 8px 20px rgba(50,205,50,0.8);
+      margin-bottom: 30px;
+      animation: bounce 2s ease-in-out infinite;
+    }
+
+    .level-complete-stats {
+      margin-bottom: 40px;
+      color: #FFFFFF;
+      font-size: 1.4rem;
+    }
+
+    .level-complete-stats p {
+      margin: 12px 0;
+      text-shadow: 2px 2px 0px #000000;
+    }
+
+    .level-complete-buttons {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+    }
+
+    /* Enhanced game UI */
+    .score-display, .time-display {
+      position: absolute;
+      background: rgba(0,0,0,0.8);
+      color: #FFFFFF;
+      padding: 10px 15px;
+      border-radius: 10px;
+      font-family: 'Patrick Hand SC', cursive;
+      font-size: 1.2rem;
+      border: 2px solid #FFD700;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    }
+
+    .score-display {
+      top: 10px;
+      right: 10px;
+    }
+
+    .time-display {
+      top: 60px;
+      right: 10px;
+    }
+  </style>
+  
+  <script>
+    (function (i, s, o, g, r, a, m) {
+      i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () {
+        (i[r].q = i[r].q || []).push(arguments)
+      }, i[r].l = 1 * new Date(); a = s.createElement(o),
+        m = s.getElementsByTagName(o)[0]; a.async = 1; a.src = g; m.parentNode.insertBefore(a, m)
+    })(window, document, 'script', 'https://www.google-analytics.com/analytics.js', 'ga');
+    
+    ga('create', 'UA-101227805-1', 'auto');
+    ga('send', 'pageview');
+  </script>
+</head>
+
+<body>
+  <!-- Main Menu Screen -->
+  <div class="menu-screen" id="mainMenu">
+    <div class="coins coin1">🪙</div>
+    <div class="coins coin2">🪙</div>
+    <div class="coins coin3">🪙</div>
+    <div class="coins coin4">🪙</div>
+    <div class="coins coin5">🪙</div>
+    <div class="coins coin6">🪙</div>
+    
+    <h1 class="mario-title">SUPER MARIO</h1>
+    
+    <div class="menu-buttons">
+      <button class="menu-btn" onclick="showLevelSelect()">🍄 Start Game</button>
+      <button class="menu-btn" onclick="showLevelSelect()">🎮 Level Select</button>
+      <button class="menu-btn" onclick="toggleControls()">⚙️ Controls</button>
+    </div>
+    
+    <div id="controlsInfo" style="display: none; margin-top: 30px; color: white; text-align: center;">
+      <p><strong>Move Left:</strong> ← / A</p>
+      <p><strong>Move Right:</strong> → / D</p>
+      <p><strong>Jump:</strong> ↑ / W / Spacebar</p>
+      <button class="back-btn" onclick="toggleControls()" style="margin-top: 20px;">Close</button>
+    </div>
+  </div>
+  
+  <!-- Level Select Screen -->
+  <div class="level-select" id="levelSelect">
+    <div class="stars" id="starsContainer"></div>
+    
+    <h1 class="level-title">SELECT LEVEL</h1>
+    
+    <div class="level-grid">
+      <button class="level-btn" onclick="startLevel(1)">
+        <div class="level-number">1-1</div>
+        <div class="level-theme">🏰 Castle</div>
+      </button>
+      <button class="level-btn" onclick="startLevel(2)">
+        <div class="level-number">1-2</div>
+        <div class="level-theme">🌋 Underground</div>
+      </button>
+      <button class="level-btn" onclick="startLevel(3)">
+        <div class="level-number">1-3</div>
+        <div class="level-theme">🌉 Bridge</div>
+      </button>
+    </div>
+    
+    <button class="back-btn" onclick="showMainMenu()">← Back to Menu</button>
+  </div>
+  
+  <!-- Game Over Screen -->
+  <div class="game-over-screen" id="gameOverScreen">
+    <div class="game-over-content">
+      <h1 class="game-over-title">GAME OVER</h1>
+      <div class="game-over-stats">
+        <p class="final-score">Final Score: <span id="finalScore">0</span></p>
+        <p class="level-reached">Level Reached: <span id="levelReached">1-1</span></p>
+      </div>
+      <div class="game-over-buttons">
+        <button class="menu-btn" onclick="restartGame()">🔄 Try Again</button>
+        <button class="menu-btn" onclick="showMainMenu()">🏠 Main Menu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Level Complete Screen -->
+  <div class="level-complete-screen" id="levelCompleteScreen">
+    <div class="level-complete-content">
+      <h1 class="level-complete-title">LEVEL COMPLETE!</h1>
+      <div class="level-complete-stats">
+        <p class="level-score">Score: <span id="levelScore">0</span></p>
+        <p class="bonus-points">Time Bonus: <span id="timeBonus">0</span></p>
+        <p class="total-score">Total Score: <span id="totalScore">0</span></p>
+      </div>
+      <div class="level-complete-buttons">
+        <button class="menu-btn" onclick="nextLevel()">➡️ Next Level</button>
+        <button class="menu-btn" onclick="showMainMenu()">🏠 Main Menu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Area -->
+  <div class="game-area" id="gameArea">
+    <div class="main">
+      <div class="description">
+        <div id="mute-button"></div>
+        <div class="fourth-one"></div>
+      </div>
+      
+      <canvas id="game-canvas" width="760" height="600"></canvas>
+      <audio id="background_music" autoplay loop>
+        <source src="./assets/audio/music/mario_theme.mp3" type="audio/mp3" />
+      </audio>
+      
+      <div class="score-display" id="score">Score: 0</div>
+      <div class="time-display" id="timeDisplay">Time: 300</div>
+      
+      <!-- Back to menu button during gameplay -->
+      <button onclick="backToMenu()" style="position: absolute; top: 10px; left: 10px; padding: 10px; background: #FF4444; color: white; border: none; border-radius: 5px; cursor: pointer; font-family: 'Patrick Hand SC', cursive;">
+        🏠 Menu
+      </button>
+    </div>
+  </div>
+
+  <script>
+    let selectedLevel = 1;
+    
+    // Game state management
+    let gameState = {
+      score: 0,
+      currentLevel: 1,
+      timeRemaining: 300,
+      gameTimer: null,
+      gameActive: false
+    };
+    
+    // Create stars for level select background
+    function createStars() {
+      const starsContainer = document.getElementById('starsContainer');
+      const starCount = 50;
+      
+      for (let i = 0; i < starCount; i++) {
+        const star = document.createElement('div');
+        star.className = 'star';
+        star.style.left = Math.random() * 100 + '%';
+        star.style.top = Math.random() * 100 + '%';
+        star.style.width = star.style.height = (Math.random() * 3 + 1) + 'px';
+        star.style.animationDelay = Math.random() * 2 + 's';
+        starsContainer.appendChild(star);
+      }
+    }
+    
+    function showMainMenu() {
+      document.getElementById('mainMenu').classList.remove('hidden');
+      document.getElementById('levelSelect').classList.remove('show');
+      document.getElementById('gameArea').classList.remove('show');
+      document.getElementById('gameOverScreen').classList.remove('show');
+      document.getElementById('levelCompleteScreen').classList.remove('show');
+      stopGameTimer();
+      
+      // Play background music when returning to menu
+      const bgMusic = document.getElementById('background_music');
+      bgMusic.play().catch(e => console.log("Audio play error:", e));
+    }
+    
+    function showLevelSelect() {
+      document.getElementById('mainMenu').classList.add('hidden');
+      document.getElementById('levelSelect').classList.add('show');
+      document.getElementById('gameArea').classList.remove('show');
+      document.getElementById('gameOverScreen').classList.remove('show');
+      document.getElementById('levelCompleteScreen').classList.remove('show');
+      
+      // Create stars if not already created
+      if (document.getElementById('starsContainer').children.length === 0) {
+        createStars();
+      }
+    }
+    
+    // FIX: Accept and handle level 1, 2, 3 as "1-1", "1-2", "1-3"
+    function startLevel(level) {
+      selectedLevel = level;
+      gameState.currentLevel = level;
+      gameState.timeRemaining = 300;
+      gameState.gameActive = true;
+      
+      document.getElementById('mainMenu').classList.add('hidden');
+      document.getElementById('levelSelect').classList.remove('show');
+      document.getElementById('gameArea').classList.add('show');
+      document.getElementById('gameOverScreen').classList.remove('show');
+      document.getElementById('levelCompleteScreen').classList.remove('show');
+      
+      updateUI();
+      startGameTimer();
+      
+      // Initialize the game with selected level
+      if (typeof game !== 'undefined' && typeof game.startWithLevel === 'function') {
+        // If your engine expects level as 1, 2, or 3, use as is
+        game.startWithLevel(level);
+      } else if (typeof game !== 'undefined') {
+        // Fallback - restart game and set level
+        setTimeout(() => {
+          if (typeof game !== 'undefined') {
+            game.currentLevel = level;
+            if (typeof game.init === 'function') {
+              game.init();
+            }
+          }
+        }, 100);
+      }
+      
+      // Play background music
+      const bgMusic = document.getElementById('background_music');
+      bgMusic.play().catch(e => console.log("Audio play error:", e));
+    }
+    
+    function startGameTimer() {
+      stopGameTimer();
+      gameState.gameTimer = setInterval(() => {
+        if (gameState.gameActive && gameState.timeRemaining > 0) {
+          gameState.timeRemaining--;
+          updateUI();
+          
+          if (gameState.timeRemaining <= 0) {
+            gameOver();
+          }
+        }
+      }, 1000);
+    }
+    
+    function stopGameTimer() {
+      if (gameState.gameTimer) {
+        clearInterval(gameState.gameTimer);
+        gameState.gameTimer = null;
+      }
+    }
+    
+    function updateUI() {
+      document.getElementById('score').textContent = `Score: ${gameState.score}`;
+      document.getElementById('timeDisplay').textContent = `Time: ${gameState.timeRemaining}`;
+    }
+    
+    function gameOver() {
+      gameState.gameActive = false;
+      stopGameTimer();
+      
+      // FIX: display correct level reached
+      let levelStr = "1-1";
+      if (gameState.currentLevel === 2) levelStr = "1-2";
+      if (gameState.currentLevel === 3) levelStr = "1-3";
+      document.getElementById('finalScore').textContent = gameState.score;
+      document.getElementById('levelReached').textContent = levelStr;
+      
+      document.getElementById('gameArea').classList.remove('show');
+      document.getElementById('gameOverScreen').classList.add('show');
+    }
+    
+    function levelComplete() {
+      gameState.gameActive = false;
+      stopGameTimer();
+      
+      // Calculate bonus points
+      const timeBonus = gameState.timeRemaining * 50;
+      gameState.score += timeBonus;
+      
+      document.getElementById('levelScore').textContent = gameState.score - timeBonus;
+      document.getElementById('timeBonus').textContent = timeBonus;
+      document.getElementById('totalScore').textContent = gameState.score;
+      
+      document.getElementById('gameArea').classList.remove('show');
+      document.getElementById('levelCompleteScreen').classList.add('show');
+    }
+    
+    function nextLevel() {
+      gameState.currentLevel++;
+      if (gameState.currentLevel > 3) gameState.currentLevel = 1; // loop or cap at max level
+      startLevel(gameState.currentLevel);
+    }
+    
+    function restartGame() {
+      gameState.score = 0;
+      startLevel(gameState.currentLevel);
+    }
+    
+    function backToMenu() {
+      // Stop the game
+      if (typeof game !== 'undefined' && game.gameLoop) {
+        cancelAnimationFrame(game.gameLoop);
+      }
+      gameState.gameActive = false;
+      stopGameTimer();
+      showMainMenu();
+    }
+    
+    function toggleControls() {
+      const controls = document.getElementById('controlsInfo');
+      controls.style.display = controls.style.display === 'none' ? 'block' : 'none';
+    }
+    
+    // Add some interactive particles on hover
+    document.addEventListener('DOMContentLoaded', function() {
+      const levelButtons = document.querySelectorAll('.level-btn:not(.locked)');
+      
+      levelButtons.forEach(button => {
+        button.addEventListener('mouseenter', function() {
+          // Add particle effect or sound here if desired
+          this.style.filter = 'brightness(1.2) saturate(1.3)';
+        });
+        
+        button.addEventListener('mouseleave', function() {
+          this.style.filter = 'none';
+        });
+      });
+      
+      // Start playing background music when page loads
+      const bgMusic = document.getElementById('background_music');
+      bgMusic.volume = 0.5; // Set volume to 50%
+      bgMusic.play().catch(e => console.log("Audio play error:", e));
+    });
+    
+    // Global functions for game integration
+    window.marioGameAPI = {
+      gameOver: gameOver,
+      levelComplete: levelComplete,
+      addScore: function(points) {
+        gameState.score += points;
+        updateUI();
+      },
+      getGameState: function() {
+        return gameState;
+      }
+    };
+    
+    // Initialize - show main menu on load
+    window.addEventListener('load', function() {
+      showMainMenu();
+    });
+  </script>
+
+  <script src="assets/javascripts/jquery.min.js"></script>
+  <script src="assets/javascripts/bundle.js"></script>
+</body>
+</html>
